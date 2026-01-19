@@ -1,0 +1,4 @@
+project_id = "jdyjmnjifpankrwxbeie"
+
+[functions.analyze-design]
+verify_jwt = false
