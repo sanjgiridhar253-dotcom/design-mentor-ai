@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
 import { 
   Sparkles, 
@@ -13,7 +12,9 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { UploadZone } from "@/components/UploadZone";
 import { FeatureCard } from "@/components/FeatureCard";
+import { FeedbackResults } from "@/components/FeedbackResults";
 import { Button } from "@/components/ui/button";
+import { useDesignAnalysis } from "@/hooks/useDesignAnalysis";
 
 const features = [
   {
@@ -49,11 +50,10 @@ const features = [
 ];
 
 const Index = () => {
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const { isAnalyzing, feedback, analyzeDesign, resetAnalysis } = useDesignAnalysis();
 
   const handleFileSelect = (file: File) => {
-    console.log("File selected:", file.name);
-    // Future: trigger analysis
+    analyzeDesign(file);
   };
 
   return (
@@ -67,62 +67,66 @@ const Index = () => {
       <main className="relative pt-32 pb-16">
         {/* Hero Section */}
         <section className="container mx-auto px-6 text-center mb-24">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="max-w-4xl mx-auto"
-          >
-            {/* Badge */}
+          {feedback ? (
+            <FeedbackResults feedback={feedback} onReset={resetAnalysis} />
+          ) : (
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="max-w-4xl mx-auto"
             >
-              <Sparkles className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-foreground/80">
-                AI-Powered Design Feedback
-              </span>
+              {/* Badge */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-8"
+              >
+                <Sparkles className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium text-foreground/80">
+                  AI-Powered Design Feedback
+                </span>
+              </motion.div>
+
+              {/* Headline */}
+              <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
+                <span className="text-foreground">Your Personal</span>
+                <br />
+                <span className="text-gradient">Design Mentor</span>
+              </h1>
+
+              {/* Subheadline */}
+              <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-12">
+                Upload your UI screenshots and receive thoughtful, structured feedback 
+                from an AI that actually helps you grow as a designer.
+              </p>
+
+              {/* Upload Zone */}
+              <UploadZone onFileSelect={handleFileSelect} isAnalyzing={isAnalyzing} />
+
+              {/* Trust indicators */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.6 }}
+                className="mt-8 flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground"
+              >
+                <span className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-accent" />
+                  Free to try
+                </span>
+                <span className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-accent" />
+                  No signup required
+                </span>
+                <span className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-accent" />
+                  Instant feedback
+                </span>
+              </motion.div>
             </motion.div>
-
-            {/* Headline */}
-            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
-              <span className="text-foreground">Your Personal</span>
-              <br />
-              <span className="text-gradient">Design Mentor</span>
-            </h1>
-
-            {/* Subheadline */}
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-12">
-              Upload your UI screenshots and receive thoughtful, structured feedback 
-              from an AI that actually helps you grow as a designer.
-            </p>
-
-            {/* Upload Zone */}
-            <UploadZone onFileSelect={handleFileSelect} isAnalyzing={isAnalyzing} />
-
-            {/* Trust indicators */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.6 }}
-              className="mt-8 flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground"
-            >
-              <span className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-accent" />
-                Free to try
-              </span>
-              <span className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-accent" />
-                No signup required
-              </span>
-              <span className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-accent" />
-                Instant feedback
-              </span>
-            </motion.div>
-          </motion.div>
+          )}
         </section>
 
         {/* Features Section */}
