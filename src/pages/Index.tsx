@@ -159,33 +159,6 @@ const Index = () => {
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="container mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="relative overflow-hidden rounded-3xl"
-          >
-            {/* Background gradient */}
-            <div className="absolute inset-0 bg-gradient-primary opacity-10" />
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-accent/10" />
-            
-            <div className="relative glass rounded-3xl p-12 md:p-16 text-center">
-              <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
-                Ready to Level Up Your Designs?
-              </h2>
-              <p className="text-muted-foreground max-w-xl mx-auto mb-8">
-                Join thousands of designers who use DesignCritique to get better feedback, faster.
-              </p>
-              <Button variant="hero" size="xl" className="group">
-                Start Free
-                <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-              </Button>
-            </div>
-          </motion.div>
-        </section>
       </main>
 
       <Footer />
