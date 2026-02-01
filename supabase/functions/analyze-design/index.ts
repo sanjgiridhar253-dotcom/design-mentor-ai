@@ -5,6 +5,38 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Robust JSON extraction from AI responses
+function extractJsonFromResponse(response: string): unknown {
+  // Step 1: Remove markdown code blocks
+  let cleaned = response
+    .replace(/```json\s*/gi, "")
+    .replace(/```\s*/g, "")
+    .trim();
+
+  // Step 2: Find JSON boundaries
+  const jsonStart = cleaned.indexOf("{");
+  const jsonEnd = cleaned.lastIndexOf("}");
+
+  if (jsonStart === -1 || jsonEnd === -1) {
+    throw new Error("No JSON object found in response");
+  }
+
+  cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
+
+  // Step 3: Attempt parse with error handling
+  try {
+    return JSON.parse(cleaned);
+  } catch (e) {
+    // Step 4: Try to fix common issues
+    cleaned = cleaned
+      .replace(/,\s*}/g, "}") // Remove trailing commas before }
+      .replace(/,\s*]/g, "]") // Remove trailing commas before ]
+      .replace(/[\x00-\x1F\x7F]/g, ""); // Remove control characters
+
+    return JSON.parse(cleaned);
+  }
+}
+
 const SYSTEM_PROMPT = `You are a warm, experienced UI/UX design mentor who genuinely wants to help designers grow.
 
 Think of yourself as that supportive senior designer who grabs coffee with junior teammates to review their work—always kind, always constructive, always focused on growth.
@@ -183,12 +215,12 @@ serve(async (req) => {
       );
     }
 
-    // Parse the JSON response from the AI
+    // Parse the JSON response from the AI with robust extraction
     let feedback;
     try {
-      feedback = JSON.parse(content);
+      feedback = extractJsonFromResponse(content);
     } catch (parseError) {
-      console.error("Failed to parse AI response as JSON:", content);
+      console.error("Failed to parse AI response as JSON:", parseError, content);
       return new Response(
         JSON.stringify({ error: "Failed to parse design feedback" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
