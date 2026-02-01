@@ -1,9 +1,27 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// Allowed origins for CORS - restrict to known domains
+const ALLOWED_ORIGINS = [
+  'https://id-preview--8f630380-2f2e-48ac-8170-c9be83753c02.lovable.app',
+  'http://localhost:8080',
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
+
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const allowedOrigin = origin && ALLOWED_ORIGINS.some(allowed => 
+    origin === allowed || origin.endsWith('.lovable.app')
+  ) ? origin : ALLOWED_ORIGINS[0];
+  
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  };
+}
+
+// Input validation constants
+const MAX_SIZE_MB = 10;
+const ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif'];
 
 // Robust JSON extraction from AI responses
 function extractJsonFromResponse(response: string): unknown {
@@ -34,6 +52,18 @@ function extractJsonFromResponse(response: string): unknown {
       .replace(/[\x00-\x1F\x7F]/g, ""); // Remove control characters
 
     return JSON.parse(cleaned);
+  }
+}
+
+// Validate base64 string
+function isValidBase64(str: string): boolean {
+  if (!str || str.length === 0) return false;
+  try {
+    // Check if it's valid base64 by attempting to decode a small portion
+    atob(str.substring(0, Math.min(100, str.length)));
+    return /^[A-Za-z0-9+/=]+$/.test(str);
+  } catch {
+    return false;
   }
 }
 
@@ -125,6 +155,9 @@ Guidelines for your feedback:
 - Remember: your goal is to inspire and empower, not to criticize`;
 
 serve(async (req) => {
+  const origin = req.headers.get('Origin');
+  const corsHeaders = getCorsHeaders(origin);
+
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -133,6 +166,7 @@ serve(async (req) => {
   try {
     const { imageBase64, mimeType } = await req.json();
 
+    // Input validation: Check if image is provided
     if (!imageBase64) {
       return new Response(
         JSON.stringify({ error: "No image provided" }),
@@ -140,16 +174,42 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY is not configured");
+    // Input validation: Validate base64 format
+    if (!isValidBase64(imageBase64)) {
       return new Response(
-        JSON.stringify({ error: "AI service not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Invalid image data format" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("Analyzing design with AI...");
+    // Input validation: Check file size (base64 is ~33% larger than binary)
+    const estimatedSizeMB = (imageBase64.length * 0.75) / (1024 * 1024);
+    if (estimatedSizeMB > MAX_SIZE_MB) {
+      return new Response(
+        JSON.stringify({ error: `Image too large. Maximum size is ${MAX_SIZE_MB}MB` }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Input validation: Validate MIME type
+    const sanitizedMimeType = mimeType?.toLowerCase() || 'image/png';
+    if (!ALLOWED_MIME_TYPES.includes(sanitizedMimeType)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid image type. Supported formats: PNG, JPEG, WebP, GIF" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      console.error("AI service configuration error");
+      return new Response(
+        JSON.stringify({ error: "Service temporarily unavailable" }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log("Processing design analysis request");
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -171,7 +231,7 @@ serve(async (req) => {
               {
                 type: "image_url",
                 image_url: {
-                  url: `data:${mimeType || "image/png"};base64,${imageBase64}`,
+                  url: `data:${sanitizedMimeType};base64,${imageBase64}`,
                 },
               },
             ],
@@ -185,21 +245,20 @@ serve(async (req) => {
       if (response.status === 429) {
         console.error("Rate limit exceeded");
         return new Response(
-          JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
+          JSON.stringify({ error: "Too many requests. Please try again in a moment." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       if (response.status === 402) {
         console.error("Payment required");
         return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Please add credits to continue." }),
+          JSON.stringify({ error: "Service credits exhausted. Please try again later." }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
+      console.error("AI processing error:", response.status);
       return new Response(
-        JSON.stringify({ error: "Failed to analyze design" }),
+        JSON.stringify({ error: "Unable to process request" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -208,9 +267,9 @@ serve(async (req) => {
     const content = aiResponse.choices?.[0]?.message?.content;
 
     if (!content) {
-      console.error("No content in AI response");
+      console.error("Empty response from AI service");
       return new Response(
-        JSON.stringify({ error: "Invalid AI response" }),
+        JSON.stringify({ error: "Unable to generate feedback" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -220,23 +279,23 @@ serve(async (req) => {
     try {
       feedback = extractJsonFromResponse(content);
     } catch (parseError) {
-      console.error("Failed to parse AI response as JSON:", parseError, content);
+      console.error("Response parsing error");
       return new Response(
-        JSON.stringify({ error: "Failed to parse design feedback" }),
+        JSON.stringify({ error: "Unable to process feedback" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("Design analysis complete");
+    console.log("Design analysis completed successfully");
 
     return new Response(
       JSON.stringify({ feedback }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error in analyze-design:", error);
+    console.error("Request processing error");
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: "Unable to process request" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
