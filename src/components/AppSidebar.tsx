@@ -32,7 +32,7 @@ const designerItems = [
 ];
 
 const recruiterItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Dashboard", url: "/recruiter-dashboard", icon: LayoutDashboard },
   { title: "Browse Designers", url: "/designers", icon: Users },
   { title: "Profile", url: "/profile", icon: UserCircle },
 ];

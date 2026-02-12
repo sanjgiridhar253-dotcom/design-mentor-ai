@@ -12,6 +12,7 @@ import MyDesigns from "./pages/MyDesigns";
 import CritiqueResults from "./pages/CritiqueResults";
 import DesignerList from "./pages/DesignerList";
 import DesignerEvaluation from "./pages/DesignerEvaluation";
+import RecruiterDashboard from "./pages/RecruiterDashboard";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/my-designs" element={<MyDesigns />} />
             <Route path="/critique/:designId" element={<CritiqueResults />} />
             <Route path="/designers" element={<DesignerList />} />
+            <Route path="/recruiter-dashboard" element={<RecruiterDashboard />} />
             <Route path="/designer/:designerId" element={<DesignerEvaluation />} />
             <Route path="/profile" element={<Profile />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
