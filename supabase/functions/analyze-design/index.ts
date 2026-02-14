@@ -164,40 +164,67 @@ serve(async (req) => {
   }
 
   try {
-    const { imageBase64, mimeType } = await req.json();
+    const { imageBase64, mimeType, imageUrl } = await req.json();
 
-    // Input validation: Check if image is provided
-    if (!imageBase64) {
+    // Input validation: Check if at least one image source is provided
+    if (!imageBase64 && !imageUrl) {
       return new Response(
         JSON.stringify({ error: "No image provided" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Input validation: Validate base64 format
-    if (!isValidBase64(imageBase64)) {
-      return new Response(
-        JSON.stringify({ error: "Invalid image data format" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    let imageContent: { type: string; image_url: { url: string } };
 
-    // Input validation: Check file size (base64 is ~33% larger than binary)
-    const estimatedSizeMB = (imageBase64.length * 0.75) / (1024 * 1024);
-    if (estimatedSizeMB > MAX_SIZE_MB) {
-      return new Response(
-        JSON.stringify({ error: `Image too large. Maximum size is ${MAX_SIZE_MB}MB` }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    if (imageBase64) {
+      // Input validation: Validate base64 format
+      if (!isValidBase64(imageBase64)) {
+        return new Response(
+          JSON.stringify({ error: "Invalid image data format" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
-    // Input validation: Validate MIME type
-    const sanitizedMimeType = mimeType?.toLowerCase() || 'image/png';
-    if (!ALLOWED_MIME_TYPES.includes(sanitizedMimeType)) {
-      return new Response(
-        JSON.stringify({ error: "Invalid image type. Supported formats: PNG, JPEG, WebP, GIF" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      // Input validation: Check file size (base64 is ~33% larger than binary)
+      const estimatedSizeMB = (imageBase64.length * 0.75) / (1024 * 1024);
+      if (estimatedSizeMB > MAX_SIZE_MB) {
+        return new Response(
+          JSON.stringify({ error: `Image too large. Maximum size is ${MAX_SIZE_MB}MB` }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Input validation: Validate MIME type
+      const sanitizedMimeType = mimeType?.toLowerCase() || 'image/png';
+      if (!ALLOWED_MIME_TYPES.includes(sanitizedMimeType)) {
+        return new Response(
+          JSON.stringify({ error: "Invalid image type. Supported formats: PNG, JPEG, WebP, GIF" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      imageContent = {
+        type: "image_url",
+        image_url: { url: `data:${sanitizedMimeType};base64,${imageBase64}` },
+      };
+    } else {
+      // Validate URL format
+      try {
+        const parsed = new URL(imageUrl);
+        if (!['http:', 'https:'].includes(parsed.protocol)) {
+          throw new Error("Invalid protocol");
+        }
+      } catch {
+        return new Response(
+          JSON.stringify({ error: "Invalid image URL" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      imageContent = {
+        type: "image_url",
+        image_url: { url: imageUrl },
+      };
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -228,12 +255,7 @@ serve(async (req) => {
                 type: "text",
                 text: "Please analyze this UI screenshot and provide detailed, actionable design feedback. Return your analysis as valid JSON matching the specified format.",
               },
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:${sanitizedMimeType};base64,${imageBase64}`,
-                },
-              },
+              imageContent,
             ],
           },
         ],
