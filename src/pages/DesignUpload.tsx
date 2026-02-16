@@ -51,23 +51,35 @@ const DesignUpload = () => {
     }
   };
 
+  const isBehanceOrProfileUrl = (url: string) => {
+    return /^https?:\/\/(www\.)?(behance\.net|dribbble\.com|figma\.com|artstation\.com)/i.test(url);
+  };
+
   const handleUrlChange = (url: string) => {
     setImageUrl(url);
     setUrlPreviewValid(false);
 
-    if (url.match(/^https?:\/\/.+\.(png|jpe?g|webp|gif|svg|bmp)(\?.*)?$/i) || url.match(/^https?:\/\/.+/i)) {
-      // Try loading as image
-      const img = new Image();
-      img.onload = () => {
-        setUrlPreviewValid(true);
-        setPreview(url);
-      };
-      img.onerror = () => {
-        setUrlPreviewValid(false);
-        setPreview(null);
-      };
-      img.src = url;
+    if (!url.match(/^https?:\/\/.+/i)) return;
+
+    if (isBehanceOrProfileUrl(url)) {
+      // Accept portfolio URLs directly — no image preview needed
+      setUrlPreviewValid(true);
+      setPreview(null);
+      return;
     }
+
+    // Try loading as direct image
+    const img = new Image();
+    img.onload = () => {
+      setUrlPreviewValid(true);
+      setPreview(url);
+    };
+    img.onerror = () => {
+      // Still allow the URL if it looks valid
+      setUrlPreviewValid(true);
+      setPreview(null);
+    };
+    img.src = url;
   };
 
   const isReadyToSubmit = () => {
@@ -302,7 +314,7 @@ const DesignUpload = () => {
             ) : (
               <div className="glass rounded-xl p-6 space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="imageUrl" className="text-foreground">Image URL *</Label>
+                  <Label htmlFor="imageUrl" className="text-foreground">Design / Profile URL *</Label>
                   <div className="relative">
                     <ExternalLink className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input
@@ -310,16 +322,16 @@ const DesignUpload = () => {
                       type="url"
                       value={imageUrl}
                       onChange={(e) => handleUrlChange(e.target.value)}
-                      placeholder="https://example.com/design.png"
+                      placeholder="https://www.behance.net/gallery/123456789/Your-Project"
                       className="pl-10 bg-secondary/50 border-border"
                     />
                   </div>
                   <p className="text-muted-foreground/60 text-xs">
-                    Paste a direct link to your design image (PNG, JPG, WebP, etc.)
+                    Paste a Behance project URL, portfolio link, or direct image URL (PNG, JPG, WebP)
                   </p>
                 </div>
 
-                {/* URL Preview */}
+                {/* URL Preview - Image */}
                 {preview && urlPreviewValid && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
@@ -349,9 +361,31 @@ const DesignUpload = () => {
                   </motion.div>
                 )}
 
+                {/* URL Preview - Profile/Portfolio link (no image) */}
+                {!preview && urlPreviewValid && imageUrl && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-xl border border-border bg-secondary/30 p-4 flex items-center gap-3"
+                  >
+                    <div className="p-2 rounded-lg bg-primary/20">
+                      <ExternalLink className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground truncate">{imageUrl}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {isBehanceOrProfileUrl(imageUrl) ? "Portfolio URL ready for analysis" : "URL accepted"}
+                      </p>
+                    </div>
+                    <Button type="button" variant="glass" size="sm" onClick={clearFile}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </motion.div>
+                )}
+
                 {imageUrl && !urlPreviewValid && (
                   <p className="text-sm text-muted-foreground">
-                    Validating image URL... Make sure it's a direct link to an image file.
+                    Validating URL...
                   </p>
                 )}
               </div>
