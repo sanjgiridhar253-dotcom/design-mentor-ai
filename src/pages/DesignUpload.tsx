@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Upload, Sparkles, X, Link, ImageIcon, ExternalLink } from "lucide-react";
+import { Upload, Sparkles, X, Link, ImageIcon, ExternalLink, Globe } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type UploadMode = "file" | "url";
 
@@ -28,6 +35,7 @@ const DesignUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [platform, setPlatform] = useState<string>("auto");
 
   const handleFileSelect = (selectedFile: File) => {
     if (selectedFile.type.startsWith("image/")) {
@@ -162,6 +170,9 @@ const DesignUpload = () => {
         analysisBody.mimeType = mimeTypeForAnalysis;
       } else {
         analysisBody.imageUrl = finalImageUrl;
+      }
+      if (platform !== "auto") {
+        analysisBody.platform = platform;
       }
 
       const { data: analysisData, error: analysisError } = await supabase.functions.invoke(
@@ -313,6 +324,25 @@ const DesignUpload = () => {
               </div>
             ) : (
               <div className="glass rounded-xl p-6 space-y-4">
+                {/* Platform Selector */}
+                <div className="space-y-2">
+                  <Label className="text-foreground">Platform</Label>
+                  <Select value={platform} onValueChange={setPlatform}>
+                    <SelectTrigger className="bg-secondary/50 border-border">
+                      <Globe className="w-4 h-4 mr-2 text-muted-foreground" />
+                      <SelectValue placeholder="Select platform" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border-border">
+                      <SelectItem value="auto">Auto-detect</SelectItem>
+                      <SelectItem value="behance">Behance</SelectItem>
+                      <SelectItem value="dribbble">Dribbble</SelectItem>
+                      <SelectItem value="figma">Figma</SelectItem>
+                      <SelectItem value="artstation">ArtStation</SelectItem>
+                      <SelectItem value="other">Other / Direct Image</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="imageUrl" className="text-foreground">Design / Profile URL *</Label>
                   <div className="relative">
