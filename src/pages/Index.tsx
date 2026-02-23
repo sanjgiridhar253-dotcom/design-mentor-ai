@@ -6,7 +6,10 @@ import {
   Type, 
   Layers, 
   Zap,
-  ArrowRight 
+  ArrowRight,
+  Upload,
+  Brain,
+  CheckCircle
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -155,6 +158,72 @@ const Index = () => {
                 description={feature.description}
                 delay={index * 0.1}
               />
+            ))}
+          </div>
+        </section>
+
+        {/* How it Works Section */}
+        <section id="how-it-works" className="snap-start min-h-screen flex flex-col justify-center container mx-auto px-6 py-16">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-16"
+          >
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
+              How It Works
+            </h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              Get expert-level design feedback in three simple steps.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {[
+              {
+                icon: Upload,
+                step: "01",
+                title: "Upload Your Design",
+                description: "Drop a screenshot, paste a Behance URL, or link any portfolio project you want reviewed.",
+              },
+              {
+                icon: Brain,
+                step: "02",
+                title: "AI Analyzes It",
+                description: "Our AI mentor evaluates layout, color, typography, and component structure in seconds.",
+              },
+              {
+                icon: CheckCircle,
+                step: "03",
+                title: "Get Actionable Feedback",
+                description: "Receive prioritized strengths, improvements, and quick wins to level up your design.",
+              },
+            ].map((item, index) => (
+              <motion.div
+                key={item.step}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.15 }}
+                className="relative text-center"
+              >
+                {index < 2 && (
+                  <div className="hidden md:block absolute top-12 left-[60%] w-[80%] h-px bg-gradient-to-r from-primary/40 to-transparent" />
+                )}
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary/10 mb-6 relative">
+                  <item.icon className="w-8 h-8 text-primary" />
+                  <span className="absolute -top-2 -right-2 text-xs font-bold font-display text-accent bg-accent/10 rounded-full w-7 h-7 flex items-center justify-center">
+                    {item.step}
+                  </span>
+                </div>
+                <h3 className="font-display font-semibold text-xl text-foreground mb-3">
+                  {item.title}
+                </h3>
+                <p className="text-muted-foreground text-sm leading-relaxed max-w-xs mx-auto">
+                  {item.description}
+                </p>
+              </motion.div>
             ))}
           </div>
         </section>
