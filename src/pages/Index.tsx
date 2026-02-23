@@ -57,16 +57,16 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <div className="h-screen overflow-y-auto snap-y snap-mandatory bg-background relative">
       {/* Background effects */}
-      <div className="fixed inset-0 bg-gradient-hero pointer-events-none" />
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="fixed inset-0 bg-gradient-hero pointer-events-none z-0" />
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary/5 rounded-full blur-3xl pointer-events-none z-0" />
       
       <Header />
 
-      <main className="relative pt-32 pb-16">
+      <main className="relative">
         {/* Hero Section */}
-        <section className="container mx-auto px-6 text-center mb-24">
+        <section className="snap-start min-h-screen flex items-center justify-center container mx-auto px-6 text-center">
           {feedback ? (
             <FeedbackResults feedback={feedback} onReset={resetAnalysis} />
           ) : (
@@ -130,7 +130,7 @@ const Index = () => {
         </section>
 
         {/* Features Section */}
-        <section id="features" className="container mx-auto px-6 mb-24">
+        <section id="features" className="snap-start min-h-screen flex flex-col justify-center container mx-auto px-6 py-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -161,7 +161,9 @@ const Index = () => {
 
       </main>
 
-      <Footer />
+      <div className="snap-start">
+        <Footer />
+      </div>
     </div>
   );
 };
