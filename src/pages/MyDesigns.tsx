@@ -1,11 +1,22 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { FileImage, Plus, Star, Calendar, Eye } from "lucide-react";
+import { FileImage, Plus, Star, Calendar, Eye, Trash2 } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Design {
   id: string;
@@ -24,6 +35,21 @@ const MyDesigns = () => {
   const navigate = useNavigate();
   const [designs, setDesigns] = useState<Design[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase.from("designs").delete().eq("id", id);
+      if (error) throw error;
+      setDesigns((prev) => prev.filter((d) => d.id !== id));
+      toast.success("Design deleted successfully");
+    } catch (error) {
+      console.error("Error deleting design:", error);
+      toast.error("Failed to delete design");
+    } finally {
+      setDeleteId(null);
+    }
+  };
 
   useEffect(() => {
     const fetchDesigns = async () => {
@@ -146,7 +172,18 @@ const MyDesigns = () => {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute bottom-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="gap-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteId(design.id);
+                        }}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
                       <Button size="sm" variant="hero" className="gap-1">
                         <Eye className="w-3 h-3" />
                         View
@@ -187,6 +224,23 @@ const MyDesigns = () => {
           )}
         </motion.div>
       </div>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Design</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this design and its critique. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteId && handleDelete(deleteId)}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 };
