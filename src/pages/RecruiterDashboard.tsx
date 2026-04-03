@@ -1,10 +1,19 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Users, Clock, CheckCircle, FileImage } from "lucide-react";
+import { Users, Clock, CheckCircle, FileImage, Star, MessageSquare, Filter } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { DesignerCard } from "@/components/DesignerCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+
+interface Evaluation {
+  rating: number | null;
+  status: string | null;
+  notes: string | null;
+  updated_at: string;
+  designer_id: string;
+}
 
 interface DesignerInfo {
   user_id: string;
@@ -15,19 +24,22 @@ interface DesignerInfo {
   pending_count: number;
   reviewed_count: number;
   latest_design_date: string | null;
+  evaluation?: Evaluation | null;
 }
+
+type FilterType = "all" | "shortlisted" | "contacted" | "pending" | "rejected";
 
 const RecruiterDashboard = () => {
   const { user } = useAuth();
   const [designers, setDesigners] = useState<DesignerInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<FilterType>("all");
 
   useEffect(() => {
     const fetchData = async () => {
       if (!user) return;
 
       try {
-        // Get all designer user IDs
         const { data: roles } = await supabase
           .from("user_roles")
           .select("user_id")
@@ -40,22 +52,28 @@ const RecruiterDashboard = () => {
           return;
         }
 
-        // Fetch profiles, designs, and recruiter's evaluations in parallel
         const [profilesRes, designsRes, evalsRes] = await Promise.all([
           supabase.from("profiles").select("*").in("user_id", designerIds),
           supabase.from("designs").select("id, designer_id, created_at").in("designer_id", designerIds),
-          supabase.from("recruiter_evaluations").select("designer_id").eq("recruiter_id", user.id),
+          supabase
+            .from("recruiter_evaluations")
+            .select("designer_id, rating, status, notes, updated_at")
+            .eq("recruiter_id", user.id)
+            .is("design_id", null),
         ]);
 
         const profiles = profilesRes.data || [];
         const designs = designsRes.data || [];
         const evals = evalsRes.data || [];
-        const evaluatedDesignerIds = new Set(evals.map((e) => e.designer_id));
+
+        const evalMap = new Map<string, Evaluation>();
+        evals.forEach((e) => evalMap.set(e.designer_id, e));
 
         const designerInfos: DesignerInfo[] = profiles.map((profile) => {
           const userDesigns = designs.filter((d) => d.designer_id === profile.user_id);
           const designCount = userDesigns.length;
-          const isReviewed = evaluatedDesignerIds.has(profile.user_id);
+          const evaluation = evalMap.get(profile.user_id) || null;
+          const isReviewed = !!evaluation;
           const latestDesign = userDesigns.sort(
             (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
           )[0];
@@ -69,13 +87,16 @@ const RecruiterDashboard = () => {
             pending_count: designCount > 0 && !isReviewed ? designCount : 0,
             reviewed_count: isReviewed ? designCount : 0,
             latest_design_date: latestDesign?.created_at || null,
+            evaluation,
           };
         });
 
-        // Sort: pending first, then reviewed, then no designs
         designerInfos.sort((a, b) => {
           if (a.pending_count > 0 && b.pending_count === 0) return -1;
           if (a.pending_count === 0 && b.pending_count > 0) return 1;
+          const ratingA = a.evaluation?.rating || 0;
+          const ratingB = b.evaluation?.rating || 0;
+          if (ratingB !== ratingA) return ratingB - ratingA;
           return b.design_count - a.design_count;
         });
 
@@ -90,16 +111,33 @@ const RecruiterDashboard = () => {
     fetchData();
   }, [user]);
 
+  const filteredDesigners = designers.filter((d) => {
+    if (filter === "all") return true;
+    if (filter === "shortlisted") return d.evaluation?.status === "shortlisted";
+    if (filter === "contacted") return d.evaluation?.status === "contacted";
+    if (filter === "rejected") return d.evaluation?.status === "rejected";
+    if (filter === "pending") return !d.evaluation || d.evaluation.status === "pending";
+    return true;
+  });
+
   const totalDesigners = designers.length;
-  const pendingReview = designers.filter((d) => d.pending_count > 0).length;
-  const recentlyEvaluated = designers.filter((d) => d.reviewed_count > 0).length;
-  const totalDesigns = designers.reduce((sum, d) => sum + d.design_count, 0);
+  const shortlisted = designers.filter((d) => d.evaluation?.status === "shortlisted").length;
+  const contacted = designers.filter((d) => d.evaluation?.status === "contacted").length;
+  const totalEvaluated = designers.filter((d) => !!d.evaluation).length;
 
   const stats = [
-    { label: "Designers Submitted", value: totalDesigners, icon: Users, color: "text-primary" },
-    { label: "Pending Review", value: pendingReview, icon: Clock, color: "text-yellow-400" },
-    { label: "Evaluated", value: recentlyEvaluated, icon: CheckCircle, color: "text-accent" },
-    { label: "Total Designs", value: totalDesigns, icon: FileImage, color: "text-orange-400" },
+    { label: "Total Designers", value: totalDesigners, icon: Users, color: "text-primary" },
+    { label: "Evaluated", value: totalEvaluated, icon: CheckCircle, color: "text-accent" },
+    { label: "Shortlisted", value: shortlisted, icon: Star, color: "text-yellow-400" },
+    { label: "Contacted", value: contacted, icon: MessageSquare, color: "text-orange-400" },
+  ];
+
+  const filters: { key: FilterType; label: string }[] = [
+    { key: "all", label: "All" },
+    { key: "pending", label: "Pending" },
+    { key: "shortlisted", label: "Shortlisted" },
+    { key: "contacted", label: "Contacted" },
+    { key: "rejected", label: "Rejected" },
   ];
 
   return (
@@ -140,6 +178,29 @@ const RecruiterDashboard = () => {
           ))}
         </motion.div>
 
+        {/* Filter bar */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+          className="flex items-center gap-2 flex-wrap"
+        >
+          <Filter className="w-4 h-4 text-muted-foreground" />
+          {filters.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                filter === f.key
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </motion.div>
+
         {/* Designer Cards */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -147,7 +208,7 @@ const RecruiterDashboard = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
         >
           <h2 className="font-display text-xl font-semibold text-foreground mb-4">
-            Designer Submissions
+            Designer Submissions ({filteredDesigners.length})
           </h2>
 
           {loading ? (
@@ -164,19 +225,30 @@ const RecruiterDashboard = () => {
                 </div>
               ))}
             </div>
-          ) : designers.length === 0 ? (
+          ) : filteredDesigners.length === 0 ? (
             <div className="glass rounded-xl p-12 text-center">
               <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
               <h3 className="font-display text-lg font-semibold text-foreground mb-2">
-                No designers yet
+                {filter === "all" ? "No designers yet" : `No ${filter} designers`}
               </h3>
               <p className="text-muted-foreground">
-                Designers will appear here once they submit their work.
+                {filter === "all"
+                  ? "Designers will appear here once they submit their work."
+                  : "No designers match this filter."}
               </p>
+              {filter !== "all" && (
+                <Button
+                  variant="ghost"
+                  className="mt-4"
+                  onClick={() => setFilter("all")}
+                >
+                  Show all designers
+                </Button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {designers.map((designer, index) => (
+              {filteredDesigners.map((designer, index) => (
                 <motion.div
                   key={designer.user_id}
                   initial={{ opacity: 0, y: 20 }}
