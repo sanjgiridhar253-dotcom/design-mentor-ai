@@ -250,89 +250,145 @@ const CritiqueResults = () => {
               </motion.div>
             )}
 
-            {/* Strengths & Improvements */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.5 }}
-              className="space-y-4"
-            >
-              {/* Strengths */}
-              {critique.strengths && critique.strengths.length > 0 && (
-                <div className="glass rounded-xl overflow-hidden">
-                  <button
-                    onClick={() => setExpandedSection(expandedSection === "strengths" ? "" : "strengths")}
-                    className="w-full p-5 flex items-center justify-between hover:bg-secondary/30 transition-colors"
-                  >
-                    <div className="flex items-center gap-4">
-                      <CheckCircle2 className="w-5 h-5 text-accent" />
-                      <div className="text-left">
-                        <h3 className="font-display font-semibold text-foreground">
-                          Strengths
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {critique.strengths.length} items
-                        </p>
-                      </div>
-                    </div>
-                    <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${
-                      expandedSection === "strengths" ? "rotate-180" : ""
-                    }`} />
-                  </button>
-                  
-                  {expandedSection === "strengths" && (
-                    <div className="px-5 pb-5 space-y-2">
-                      {critique.strengths.map((strength, i) => (
-                        <div key={i} className="p-3 rounded-lg bg-accent/10 border border-accent/20">
-                          <div className="flex items-start gap-3">
-                            <CheckCircle2 className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
-                            <span className="text-sm text-foreground/90">{strength}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+            {/* Detailed Category Feedback */}
+            {critique.detailed_feedback?.categories && critique.detailed_feedback.categories.length > 0 ? (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+                className="space-y-4"
+              >
+                <h2 className="font-display text-xl font-semibold text-foreground">
+                  Detailed Breakdown
+                </h2>
+                {critique.detailed_feedback.categories.map((category: any, catIndex: number) => {
+                  const strengths = category.findings?.filter((f: any) => f.type === "strength") || [];
+                  const improvements = category.findings?.filter((f: any) => f.type === "improvement") || [];
+                  const isExpanded = expandedSection === category.name;
 
-              {/* Improvements */}
-              {critique.improvements && critique.improvements.length > 0 && (
-                <div className="glass rounded-xl overflow-hidden">
-                  <button
-                    onClick={() => setExpandedSection(expandedSection === "improvements" ? "" : "improvements")}
-                    className="w-full p-5 flex items-center justify-between hover:bg-secondary/30 transition-colors"
-                  >
-                    <div className="flex items-center gap-4">
-                      <Lightbulb className="w-5 h-5 text-primary" />
-                      <div className="text-left">
-                        <h3 className="font-display font-semibold text-foreground">
-                          Areas for Improvement
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {critique.improvements.length} suggestions
-                        </p>
-                      </div>
-                    </div>
-                    <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${
-                      expandedSection === "improvements" ? "rotate-180" : ""
-                    }`} />
-                  </button>
-                  
-                  {expandedSection === "improvements" && (
-                    <div className="px-5 pb-5 space-y-2">
-                      {critique.improvements.map((improvement, i) => (
-                        <div key={i} className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-                          <div className="flex items-start gap-3">
-                            <Lightbulb className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                            <span className="text-sm text-foreground/90">{improvement}</span>
+                  return (
+                    <div key={catIndex} className="glass rounded-xl overflow-hidden">
+                      <button
+                        onClick={() => setExpandedSection(isExpanded ? "" : category.name)}
+                        className="w-full p-5 flex items-center justify-between hover:bg-secondary/30 transition-colors"
+                      >
+                        <div className="flex items-center gap-4">
+                          {category.status === "excellent" ? (
+                            <Trophy className="w-5 h-5 text-accent" />
+                          ) : category.status === "good" ? (
+                            <CheckCircle2 className="w-5 h-5 text-yellow-400" />
+                          ) : (
+                            <Target className="w-5 h-5 text-orange-400" />
+                          )}
+                          <div className="text-left">
+                            <h3 className="font-display font-semibold text-foreground">
+                              {category.name}
+                            </h3>
+                            <p className="text-sm text-muted-foreground capitalize">
+                              {category.status?.replace("-", " ")}
+                            </p>
                           </div>
                         </div>
-                      ))}
+                        <div className="flex items-center gap-4">
+                          <span className={`font-display text-2xl font-bold ${getScoreColor((category.score || 0) * 10)}`}>
+                            {category.score}/10
+                          </span>
+                          <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                        </div>
+                      </button>
+
+                      {isExpanded && (
+                        <div className="px-5 pb-5 space-y-3">
+                          {strengths.map((finding: any, i: number) => (
+                            <div key={`s-${i}`} className="p-4 rounded-lg bg-accent/10 border border-accent/20">
+                              <div className="flex items-start gap-3">
+                                <CheckCircle2 className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
+                                <div>
+                                  <h4 className="font-medium text-foreground mb-1">{finding.title}</h4>
+                                  <p className="text-sm text-muted-foreground leading-relaxed">{finding.description}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                          {improvements.map((finding: any, i: number) => (
+                            <div key={`i-${i}`} className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+                              <div className="flex items-start gap-3">
+                                <Lightbulb className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                                <div>
+                                  <h4 className="font-medium text-foreground mb-1">{finding.title}</h4>
+                                  <p className="text-sm text-muted-foreground leading-relaxed">{finding.description}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              )}
-            </motion.div>
+                  );
+                })}
+              </motion.div>
+            ) : (
+              /* Fallback to flat strengths/improvements if no detailed categories */
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+                className="space-y-4"
+              >
+                {critique.strengths && critique.strengths.length > 0 && (
+                  <div className="glass rounded-xl overflow-hidden">
+                    <button
+                      onClick={() => setExpandedSection(expandedSection === "strengths" ? "" : "strengths")}
+                      className="w-full p-5 flex items-center justify-between hover:bg-secondary/30 transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <CheckCircle2 className="w-5 h-5 text-accent" />
+                        <h3 className="font-display font-semibold text-foreground">Strengths</h3>
+                      </div>
+                      <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${expandedSection === "strengths" ? "rotate-180" : ""}`} />
+                    </button>
+                    {expandedSection === "strengths" && (
+                      <div className="px-5 pb-5 space-y-2">
+                        {critique.strengths.map((s, i) => (
+                          <div key={i} className="p-3 rounded-lg bg-accent/10 border border-accent/20">
+                            <div className="flex items-start gap-3">
+                              <CheckCircle2 className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
+                              <span className="text-sm text-foreground/90">{s}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {critique.improvements && critique.improvements.length > 0 && (
+                  <div className="glass rounded-xl overflow-hidden">
+                    <button
+                      onClick={() => setExpandedSection(expandedSection === "improvements" ? "" : "improvements")}
+                      className="w-full p-5 flex items-center justify-between hover:bg-secondary/30 transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <Lightbulb className="w-5 h-5 text-primary" />
+                        <h3 className="font-display font-semibold text-foreground">Areas for Improvement</h3>
+                      </div>
+                      <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${expandedSection === "improvements" ? "rotate-180" : ""}`} />
+                    </button>
+                    {expandedSection === "improvements" && (
+                      <div className="px-5 pb-5 space-y-2">
+                        {critique.improvements.map((imp, i) => (
+                          <div key={i} className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                            <div className="flex items-start gap-3">
+                              <Lightbulb className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                              <span className="text-sm text-foreground/90">{imp}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </motion.div>
+            )}
           </>
         ) : (
           <motion.div
