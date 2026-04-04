@@ -11,11 +11,13 @@ import {
   AlertCircle,
   Palette,
   Layout,
-  Type
+  Type,
+  RefreshCw
 } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Critique {
   id: string;
@@ -72,6 +74,7 @@ const CritiqueResults = () => {
   const [design, setDesign] = useState<Design | null>(null);
   const [critique, setCritique] = useState<Critique | null>(null);
   const [loading, setLoading] = useState(true);
+  const [reanalyzing, setReanalyzing] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string>("Typography");
 
   useEffect(() => {
@@ -107,6 +110,73 @@ const CritiqueResults = () => {
 
     fetchData();
   }, [designId]);
+
+  const handleReanalyze = async () => {
+    if (!design || !designId) return;
+    setReanalyzing(true);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke("analyze-design", {
+        body: { imageUrl: design.image_url },
+      });
+
+      if (fnError) throw new Error(fnError.message);
+      if (data?.error) throw new Error(data.error);
+      if (!data?.feedback) throw new Error("No feedback received");
+
+      const fb = data.feedback;
+      const overallScore = Math.round((fb.overallScore || 0) * 10);
+      const categories = fb.categories || [];
+      const getScore = (name: string) => {
+        const cat = categories.find((c: any) => c.name?.toLowerCase().includes(name));
+        return cat ? Math.round((cat.score || 0) * 10) : null;
+      };
+
+      const strengths = categories.flatMap((c: any) =>
+        (c.findings || []).filter((f: any) => f.type === "strength").map((f: any) => f.title)
+      );
+      const improvements = categories.flatMap((c: any) =>
+        (c.findings || []).filter((f: any) => f.type === "improvement").map((f: any) => f.title)
+      );
+
+      const critiquePayload = {
+        overall_score: overallScore,
+        layout_score: getScore("spacing") || getScore("layout"),
+        color_score: getScore("color"),
+        typography_score: getScore("typography"),
+        strengths,
+        improvements,
+        quick_wins: fb.topPriorities || [],
+        detailed_feedback: fb,
+      };
+
+      if (critique) {
+        const { error: updateError } = await supabase
+          .from("ai_critiques")
+          .update(critiquePayload)
+          .eq("id", critique.id);
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from("ai_critiques")
+          .insert({ design_id: designId, ...critiquePayload });
+        if (insertError) throw insertError;
+      }
+
+      const { data: newCritique } = await supabase
+        .from("ai_critiques")
+        .select("*")
+        .eq("design_id", designId)
+        .maybeSingle();
+      setCritique(newCritique);
+      setExpandedSection("Typography");
+      toast.success("Design re-analyzed successfully!");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to re-analyze";
+      toast.error(msg);
+    } finally {
+      setReanalyzing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -159,9 +229,20 @@ const CritiqueResults = () => {
             Back to My Designs
           </Button>
 
-          <h1 className="font-display text-3xl font-bold text-foreground mb-2">
-            {design.title}
-          </h1>
+          <div className="flex items-center justify-between">
+            <h1 className="font-display text-3xl font-bold text-foreground mb-2">
+              {design.title}
+            </h1>
+            <Button
+              variant="glass"
+              onClick={handleReanalyze}
+              disabled={reanalyzing}
+              className="gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${reanalyzing ? "animate-spin" : ""}`} />
+              {reanalyzing ? "Analyzing..." : "Re-analyze"}
+            </Button>
+          </div>
           {design.description && (
             <p className="text-muted-foreground">{design.description}</p>
           )}
