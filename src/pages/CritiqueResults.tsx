@@ -111,6 +111,73 @@ const CritiqueResults = () => {
     fetchData();
   }, [designId]);
 
+  const handleReanalyze = async () => {
+    if (!design || !designId) return;
+    setReanalyzing(true);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke("analyze-design", {
+        body: { imageUrl: design.image_url },
+      });
+
+      if (fnError) throw new Error(fnError.message);
+      if (data?.error) throw new Error(data.error);
+      if (!data?.feedback) throw new Error("No feedback received");
+
+      const fb = data.feedback;
+      const overallScore = Math.round((fb.overallScore || 0) * 10);
+      const categories = fb.categories || [];
+      const getScore = (name: string) => {
+        const cat = categories.find((c: any) => c.name?.toLowerCase().includes(name));
+        return cat ? Math.round((cat.score || 0) * 10) : null;
+      };
+
+      const strengths = categories.flatMap((c: any) =>
+        (c.findings || []).filter((f: any) => f.type === "strength").map((f: any) => f.title)
+      );
+      const improvements = categories.flatMap((c: any) =>
+        (c.findings || []).filter((f: any) => f.type === "improvement").map((f: any) => f.title)
+      );
+
+      const critiquePayload = {
+        overall_score: overallScore,
+        layout_score: getScore("spacing") || getScore("layout"),
+        color_score: getScore("color"),
+        typography_score: getScore("typography"),
+        strengths,
+        improvements,
+        quick_wins: fb.topPriorities || [],
+        detailed_feedback: fb,
+      };
+
+      if (critique) {
+        const { error: updateError } = await supabase
+          .from("ai_critiques")
+          .update(critiquePayload)
+          .eq("id", critique.id);
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from("ai_critiques")
+          .insert({ design_id: designId, ...critiquePayload });
+        if (insertError) throw insertError;
+      }
+
+      const { data: newCritique } = await supabase
+        .from("ai_critiques")
+        .select("*")
+        .eq("design_id", designId)
+        .maybeSingle();
+      setCritique(newCritique);
+      setExpandedSection("Typography");
+      toast.success("Design re-analyzed successfully!");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to re-analyze";
+      toast.error(msg);
+    } finally {
+      setReanalyzing(false);
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
