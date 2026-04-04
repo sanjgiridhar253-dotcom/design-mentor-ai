@@ -229,9 +229,20 @@ const CritiqueResults = () => {
             Back to My Designs
           </Button>
 
-          <h1 className="font-display text-3xl font-bold text-foreground mb-2">
-            {design.title}
-          </h1>
+          <div className="flex items-center justify-between">
+            <h1 className="font-display text-3xl font-bold text-foreground mb-2">
+              {design.title}
+            </h1>
+            <Button
+              variant="glass"
+              onClick={handleReanalyze}
+              disabled={reanalyzing}
+              className="gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${reanalyzing ? "animate-spin" : ""}`} />
+              {reanalyzing ? "Analyzing..." : "Re-analyze"}
+            </Button>
+          </div>
           {design.description && (
             <p className="text-muted-foreground">{design.description}</p>
           )}
