@@ -11,11 +11,13 @@ import {
   AlertCircle,
   Palette,
   Layout,
-  Type
+  Type,
+  RefreshCw
 } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Critique {
   id: string;
