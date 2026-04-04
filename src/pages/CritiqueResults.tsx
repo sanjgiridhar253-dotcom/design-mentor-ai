@@ -73,17 +73,19 @@ const CritiqueResults = () => {
   const { designId } = useParams<{ designId: string }>();
   const navigate = useNavigate();
   const [design, setDesign] = useState<Design | null>(null);
-  const [critique, setCritique] = useState<Critique | null>(null);
+  const [allCritiques, setAllCritiques] = useState<Critique[]>([]);
+  const [selectedCritiqueId, setSelectedCritiqueId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [reanalyzing, setReanalyzing] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string>("Typography");
+
+  const critique = allCritiques.find(c => c.id === selectedCritiqueId) || allCritiques[0] || null;
 
   useEffect(() => {
     const fetchData = async () => {
       if (!designId) return;
 
       try {
-        // Fetch design
         const { data: designData, error: designError } = await supabase
           .from("designs")
           .select("*")
@@ -93,15 +95,17 @@ const CritiqueResults = () => {
         if (designError) throw designError;
         setDesign(designData);
 
-        // Fetch critique
-        const { data: critiqueData, error: critiqueError } = await supabase
+        const { data: critiquesData, error: critiqueError } = await supabase
           .from("ai_critiques")
           .select("*")
           .eq("design_id", designId)
-          .maybeSingle();
+          .order("created_at", { ascending: false });
 
         if (critiqueError) throw critiqueError;
-        setCritique(critiqueData);
+        setAllCritiques(critiquesData || []);
+        if (critiquesData && critiquesData.length > 0) {
+          setSelectedCritiqueId(critiquesData[0].id);
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
