@@ -154,25 +154,22 @@ const CritiqueResults = () => {
         detailed_feedback: fb,
       };
 
-      if (critique) {
-        const { error: updateError } = await supabase
-          .from("ai_critiques")
-          .update(critiquePayload)
-          .eq("id", critique.id);
-        if (updateError) throw updateError;
-      } else {
-        const { error: insertError } = await supabase
-          .from("ai_critiques")
-          .insert({ design_id: designId, ...critiquePayload });
-        if (insertError) throw insertError;
-      }
+      // Always insert a new critique for history tracking
+      const { error: insertError } = await supabase
+        .from("ai_critiques")
+        .insert({ design_id: designId, ...critiquePayload });
+      if (insertError) throw insertError;
 
-      const { data: newCritique } = await supabase
+      // Refetch all critiques
+      const { data: newCritiques } = await supabase
         .from("ai_critiques")
         .select("*")
         .eq("design_id", designId)
-        .maybeSingle();
-      setCritique(newCritique);
+        .order("created_at", { ascending: false });
+      setAllCritiques(newCritiques || []);
+      if (newCritiques && newCritiques.length > 0) {
+        setSelectedCritiqueId(newCritiques[0].id);
+      }
       setExpandedSection("Typography");
       toast.success("Design re-analyzed successfully!");
     } catch (err) {
