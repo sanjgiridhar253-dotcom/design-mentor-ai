@@ -472,6 +472,17 @@ const CritiqueResults = () => {
                 )}
               </motion.div>
             )}
+
+
+            {/* Analysis History */}
+            <AnalysisHistory
+              history={allCritiques}
+              selectedId={selectedCritiqueId || ""}
+              onSelect={(id) => {
+                setSelectedCritiqueId(id);
+                setExpandedSection("Typography");
+              }}
+            />
           </>
         ) : (
           <motion.div
