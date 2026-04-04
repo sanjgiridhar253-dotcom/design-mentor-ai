@@ -18,6 +18,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { AnalysisHistory } from "@/components/AnalysisHistory";
 
 interface Critique {
   id: string;
@@ -72,17 +73,19 @@ const CritiqueResults = () => {
   const { designId } = useParams<{ designId: string }>();
   const navigate = useNavigate();
   const [design, setDesign] = useState<Design | null>(null);
-  const [critique, setCritique] = useState<Critique | null>(null);
+  const [allCritiques, setAllCritiques] = useState<Critique[]>([]);
+  const [selectedCritiqueId, setSelectedCritiqueId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [reanalyzing, setReanalyzing] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string>("Typography");
+
+  const critique = allCritiques.find(c => c.id === selectedCritiqueId) || allCritiques[0] || null;
 
   useEffect(() => {
     const fetchData = async () => {
       if (!designId) return;
 
       try {
-        // Fetch design
         const { data: designData, error: designError } = await supabase
           .from("designs")
           .select("*")
@@ -92,15 +95,17 @@ const CritiqueResults = () => {
         if (designError) throw designError;
         setDesign(designData);
 
-        // Fetch critique
-        const { data: critiqueData, error: critiqueError } = await supabase
+        const { data: critiquesData, error: critiqueError } = await supabase
           .from("ai_critiques")
           .select("*")
           .eq("design_id", designId)
-          .maybeSingle();
+          .order("created_at", { ascending: false });
 
         if (critiqueError) throw critiqueError;
-        setCritique(critiqueData);
+        setAllCritiques(critiquesData || []);
+        if (critiquesData && critiquesData.length > 0) {
+          setSelectedCritiqueId(critiquesData[0].id);
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -149,25 +154,22 @@ const CritiqueResults = () => {
         detailed_feedback: fb,
       };
 
-      if (critique) {
-        const { error: updateError } = await supabase
-          .from("ai_critiques")
-          .update(critiquePayload)
-          .eq("id", critique.id);
-        if (updateError) throw updateError;
-      } else {
-        const { error: insertError } = await supabase
-          .from("ai_critiques")
-          .insert({ design_id: designId, ...critiquePayload });
-        if (insertError) throw insertError;
-      }
+      // Always insert a new critique for history tracking
+      const { error: insertError } = await supabase
+        .from("ai_critiques")
+        .insert({ design_id: designId, ...critiquePayload });
+      if (insertError) throw insertError;
 
-      const { data: newCritique } = await supabase
+      // Refetch all critiques
+      const { data: newCritiques } = await supabase
         .from("ai_critiques")
         .select("*")
         .eq("design_id", designId)
-        .maybeSingle();
-      setCritique(newCritique);
+        .order("created_at", { ascending: false });
+      setAllCritiques(newCritiques || []);
+      if (newCritiques && newCritiques.length > 0) {
+        setSelectedCritiqueId(newCritiques[0].id);
+      }
       setExpandedSection("Typography");
       toast.success("Design re-analyzed successfully!");
     } catch (err) {
@@ -470,6 +472,17 @@ const CritiqueResults = () => {
                 )}
               </motion.div>
             )}
+
+
+            {/* Analysis History */}
+            <AnalysisHistory
+              history={allCritiques}
+              selectedId={selectedCritiqueId || ""}
+              onSelect={(id) => {
+                setSelectedCritiqueId(id);
+                setExpandedSection("Typography");
+              }}
+            />
           </>
         ) : (
           <motion.div
