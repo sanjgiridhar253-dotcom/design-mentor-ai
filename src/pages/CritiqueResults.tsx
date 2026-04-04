@@ -74,6 +74,7 @@ const CritiqueResults = () => {
   const [design, setDesign] = useState<Design | null>(null);
   const [critique, setCritique] = useState<Critique | null>(null);
   const [loading, setLoading] = useState(true);
+  const [reanalyzing, setReanalyzing] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string>("Typography");
 
   useEffect(() => {
