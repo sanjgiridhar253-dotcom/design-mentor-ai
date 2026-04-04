@@ -18,6 +18,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { AnalysisHistory } from "@/components/AnalysisHistory";
 
 interface Critique {
   id: string;
