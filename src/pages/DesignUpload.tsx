@@ -107,6 +107,8 @@ const DesignUpload = () => {
       let finalImageUrl = "";
       let base64ForAnalysis: string | null = null;
       let mimeTypeForAnalysis = "image/png";
+      let storagePath: string | null = null;
+
 
       if (uploadMode === "file" && file) {
         // Upload image to storage
@@ -124,7 +126,9 @@ const DesignUpload = () => {
           .getPublicUrl(fileName);
 
         finalImageUrl = publicUrl;
+        storagePath = fileName;
         mimeTypeForAnalysis = file.type;
+
 
         // Get base64 for analysis
         base64ForAnalysis = await new Promise<string>((resolve, reject) => {
@@ -155,9 +159,14 @@ const DesignUpload = () => {
           description: fullDescription,
           category,
           image_url: finalImageUrl,
+          source_type: uploadMode,
+          source_platform: uploadMode === "url" ? platform : null,
+          source_url: uploadMode === "url" ? imageUrl : null,
+          storage_path: storagePath,
         })
         .select()
         .single();
+
 
       if (designError) throw designError;
 
@@ -195,7 +204,10 @@ const DesignUpload = () => {
           ),
           quick_wins: analysisData.feedback.topPriorities || [],
           detailed_feedback: analysisData.feedback,
+          version: 1,
+          model: analysisData.model ?? "google/gemini-2.5-flash",
         });
+
       }
 
       toast.success("Design uploaded and analyzed!");

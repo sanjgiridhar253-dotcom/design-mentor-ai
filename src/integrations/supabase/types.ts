@@ -23,10 +23,12 @@ export type Database = {
           id: string
           improvements: string[] | null
           layout_score: number | null
+          model: string | null
           overall_score: number | null
           quick_wins: string[] | null
           strengths: string[] | null
           typography_score: number | null
+          version: number | null
         }
         Insert: {
           color_score?: number | null
@@ -36,10 +38,12 @@ export type Database = {
           id?: string
           improvements?: string[] | null
           layout_score?: number | null
+          model?: string | null
           overall_score?: number | null
           quick_wins?: string[] | null
           strengths?: string[] | null
           typography_score?: number | null
+          version?: number | null
         }
         Update: {
           color_score?: number | null
@@ -49,14 +53,131 @@ export type Database = {
           id?: string
           improvements?: string[] | null
           layout_score?: number | null
+          model?: string | null
           overall_score?: number | null
           quick_wins?: string[] | null
           strengths?: string[] | null
           typography_score?: number | null
+          version?: number | null
         }
         Relationships: [
           {
             foreignKeyName: "ai_critiques_design_id_fkey"
+            columns: ["design_id"]
+            isOneToOne: false
+            referencedRelation: "designs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      analysis_sessions: {
+        Row: {
+          created_at: string
+          design_id: string | null
+          feedback: Json | null
+          id: string
+          image_url: string | null
+          overall_score: number | null
+          source: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          design_id?: string | null
+          feedback?: Json | null
+          id?: string
+          image_url?: string | null
+          overall_score?: number | null
+          source?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          design_id?: string | null
+          feedback?: Json | null
+          id?: string
+          image_url?: string | null
+          overall_score?: number | null
+          source?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_sessions_design_id_fkey"
+            columns: ["design_id"]
+            isOneToOne: false
+            referencedRelation: "designs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      design_comparisons: {
+        Row: {
+          created_at: string
+          design_ids: string[]
+          id: string
+          owner_id: string
+          result: Json | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          design_ids?: string[]
+          id?: string
+          owner_id: string
+          result?: Json | null
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          design_ids?: string[]
+          id?: string
+          owner_id?: string
+          result?: Json | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      design_evaluations: {
+        Row: {
+          created_at: string
+          design_id: string
+          designer_id: string
+          id: string
+          notes: string | null
+          rating: number | null
+          recruiter_id: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          design_id: string
+          designer_id: string
+          id?: string
+          notes?: string | null
+          rating?: number | null
+          recruiter_id: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          design_id?: string
+          designer_id?: string
+          id?: string
+          notes?: string | null
+          rating?: number | null
+          recruiter_id?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "design_evaluations_design_id_fkey"
             columns: ["design_id"]
             isOneToOne: false
             referencedRelation: "designs"
@@ -72,6 +193,10 @@ export type Database = {
           designer_id: string
           id: string
           image_url: string
+          source_platform: string | null
+          source_type: string | null
+          source_url: string | null
+          storage_path: string | null
           tags: string[] | null
           title: string
           updated_at: string
@@ -83,6 +208,10 @@ export type Database = {
           designer_id: string
           id?: string
           image_url: string
+          source_platform?: string | null
+          source_type?: string | null
+          source_url?: string | null
+          storage_path?: string | null
           tags?: string[] | null
           title: string
           updated_at?: string
@@ -94,6 +223,10 @@ export type Database = {
           designer_id?: string
           id?: string
           image_url?: string
+          source_platform?: string | null
+          source_type?: string | null
+          source_url?: string | null
+          storage_path?: string | null
           tags?: string[] | null
           title?: string
           updated_at?: string
