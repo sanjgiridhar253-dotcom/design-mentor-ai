@@ -39,8 +39,20 @@ const MyDesigns = () => {
 
   const handleDelete = async (id: string) => {
     try {
+      // Look up the stored file (if any) so it can be removed from storage too
+      const { data: designRow } = await supabase
+        .from("designs")
+        .select("storage_path")
+        .eq("id", id)
+        .maybeSingle();
+
       const { error } = await supabase.from("designs").delete().eq("id", id);
       if (error) throw error;
+
+      if (designRow?.storage_path) {
+        await supabase.storage.from("designs").remove([designRow.storage_path]);
+      }
+
       setDesigns((prev) => prev.filter((d) => d.id !== id));
       toast.success("Design deleted successfully");
     } catch (error) {
@@ -50,6 +62,7 @@ const MyDesigns = () => {
       setDeleteId(null);
     }
   };
+
 
   useEffect(() => {
     const fetchDesigns = async () => {
