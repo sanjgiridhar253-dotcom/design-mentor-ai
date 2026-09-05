@@ -126,7 +126,9 @@ const DesignUpload = () => {
           .getPublicUrl(fileName);
 
         finalImageUrl = publicUrl;
+        storagePath = fileName;
         mimeTypeForAnalysis = file.type;
+
 
         // Get base64 for analysis
         base64ForAnalysis = await new Promise<string>((resolve, reject) => {
