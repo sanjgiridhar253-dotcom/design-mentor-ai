@@ -159,9 +159,14 @@ const DesignUpload = () => {
           description: fullDescription,
           category,
           image_url: finalImageUrl,
+          source_type: uploadMode,
+          source_platform: uploadMode === "url" ? platform : null,
+          source_url: uploadMode === "url" ? imageUrl : null,
+          storage_path: storagePath,
         })
         .select()
         .single();
+
 
       if (designError) throw designError;
 
