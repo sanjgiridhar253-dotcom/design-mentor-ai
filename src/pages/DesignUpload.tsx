@@ -204,7 +204,10 @@ const DesignUpload = () => {
           ),
           quick_wins: analysisData.feedback.topPriorities || [],
           detailed_feedback: analysisData.feedback,
+          version: 1,
+          model: analysisData.model ?? "google/gemini-2.5-flash",
         });
+
       }
 
       toast.success("Design uploaded and analyzed!");
