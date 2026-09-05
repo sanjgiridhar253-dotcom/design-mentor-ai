@@ -152,6 +152,8 @@ const CritiqueResults = () => {
         improvements,
         quick_wins: fb.topPriorities || [],
         detailed_feedback: fb,
+        version: allCritiques.length + 1,
+        model: data.model ?? "google/gemini-2.5-flash",
       };
 
       // Always insert a new critique for history tracking
@@ -159,6 +161,7 @@ const CritiqueResults = () => {
         .from("ai_critiques")
         .insert({ design_id: designId, ...critiquePayload });
       if (insertError) throw insertError;
+
 
       // Refetch all critiques
       const { data: newCritiques } = await supabase
