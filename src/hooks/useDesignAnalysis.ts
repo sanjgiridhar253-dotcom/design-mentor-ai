@@ -69,7 +69,26 @@ export const useDesignAnalysis = () => {
       }
 
       setFeedback(data.feedback);
+
+      // Persist the analysis for signed-in users so it survives a refresh
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        if (authData?.user) {
+          await saveAnalysisSession({
+            userId: authData.user.id,
+            source: "landing",
+            feedback: data.feedback,
+            overallScore: data.feedback.overallScore
+              ? Math.round(data.feedback.overallScore * 10)
+              : null,
+          });
+        }
+      } catch (persistError) {
+        console.error("Could not save analysis session:", persistError);
+      }
+
       toast.success("Design analysis complete!");
+
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to analyze design";
       setError(message);
