@@ -107,6 +107,8 @@ const DesignUpload = () => {
       let finalImageUrl = "";
       let base64ForAnalysis: string | null = null;
       let mimeTypeForAnalysis = "image/png";
+      let storagePath: string | null = null;
+
 
       if (uploadMode === "file" && file) {
         // Upload image to storage
