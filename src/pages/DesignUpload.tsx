@@ -189,7 +189,23 @@ const DesignUpload = () => {
         { body: analysisBody }
       );
 
+      if (analysisError) {
+        let reason = "";
+        try {
+          const ctx = (analysisError as any)?.context;
+          const parsed = ctx ? await ctx.json() : null;
+          reason = parsed?.error ?? "";
+        } catch {
+          reason = "";
+        }
+        toast.error(
+          reason ||
+            "Your design was saved, but we couldn't analyze it. Try again with a PNG or JPG screenshot."
+        );
+      }
+
       if (!analysisError && analysisData?.feedback) {
+
         await supabase.from("ai_critiques").insert({
           design_id: design.id,
           overall_score: analysisData.feedback.overallScore * 10,
