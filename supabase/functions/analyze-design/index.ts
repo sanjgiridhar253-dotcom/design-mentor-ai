@@ -227,14 +227,34 @@ serve(async (req) => {
       }
 
       // Fetch the remote image ourselves so the model always receives real image bytes.
-      let fetched: Response;
-      try {
-        fetched = await fetch(imageUrl, {
-          headers: { "User-Agent": "Mozilla/5.0 (compatible; DesignCritiqueBot/1.0)" },
-          redirect: "follow",
-        });
-      } catch (e) {
-        console.error("Image fetch failed:", String(e));
+      // Many image hosts (Behance/Dribbble CDNs) reject unknown user agents with 403,
+      // so present as a normal browser and send a same-origin Referer.
+      const parsedUrl = new URL(imageUrl);
+      const browserHeaders: Record<string, string> = {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        Referer: `${parsedUrl.origin}/`,
+      };
+
+      let fetched: Response | null = null;
+      let fetchErr = "";
+      for (const headers of [browserHeaders, { ...browserHeaders, Referer: undefined } as Record<string, string>]) {
+        try {
+          const clean = Object.fromEntries(
+            Object.entries(headers).filter(([, v]) => typeof v === "string")
+          ) as Record<string, string>;
+          const res = await fetch(imageUrl, { headers: clean, redirect: "follow" });
+          fetched = res;
+          if (res.ok) break;
+        } catch (e) {
+          fetchErr = String(e);
+        }
+      }
+
+      if (!fetched) {
+        console.error("Image fetch failed:", fetchErr);
         return new Response(
           JSON.stringify({ error: "We couldn't open that link. Please check it or upload the image file instead." }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -243,11 +263,18 @@ serve(async (req) => {
 
       if (!fetched.ok) {
         console.error("Image fetch status:", fetched.status);
+        const message =
+          fetched.status === 403 || fetched.status === 401
+            ? "That site blocked us from downloading the image. Save the design as a PNG or JPG and upload the file instead."
+            : fetched.status === 404
+              ? "That link doesn't exist anymore. Double-check it, or upload the image file instead."
+              : "That link couldn't be loaded. Please use a direct image link or upload the file.";
         return new Response(
-          JSON.stringify({ error: "That link couldn't be loaded. Please use a direct image link or upload the file." }),
+          JSON.stringify({ error: message }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
 
       const contentType = (fetched.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
       if (!ALLOWED_MIME_TYPES.includes(contentType)) {
