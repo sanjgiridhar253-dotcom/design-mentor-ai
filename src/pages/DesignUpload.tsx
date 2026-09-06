@@ -384,7 +384,7 @@ const DesignUpload = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="imageUrl" className="text-foreground">Design / Profile URL *</Label>
+                  <Label htmlFor="imageUrl" className="text-foreground">Direct image URL *</Label>
                   <div className="relative">
                     <ExternalLink className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input
@@ -392,17 +392,17 @@ const DesignUpload = () => {
                       type="url"
                       value={imageUrl}
                       onChange={(e) => handleUrlChange(e.target.value)}
-                      placeholder="https://www.behance.net/gallery/123456789/Your-Project"
+                      placeholder="https://cdn.example.com/my-design.png"
                       className="pl-10 bg-secondary/50 border-border"
                     />
                   </div>
                   <p className="text-muted-foreground/60 text-xs">
-                    Paste a Behance project URL, portfolio link, or direct image URL (PNG, JPG, WebP)
+                    The link must point straight at the picture (ending in .png, .jpg, .webp). On Behance or Dribbble, right-click the design image and choose "Copy image address".
                   </p>
                 </div>
 
                 {/* URL Preview - Image */}
-                {preview && urlPreviewValid && (
+                {preview && urlStatus === "image" && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -416,7 +416,7 @@ const DesignUpload = () => {
                     <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent" />
                     <div className="absolute bottom-4 left-4 flex items-center gap-2 text-sm text-muted-foreground">
                       <ImageIcon className="w-4 h-4 text-accent" />
-                      <span>Image loaded successfully</span>
+                      <span>Image loaded — ready for AI feedback</span>
                     </div>
                     <div className="absolute bottom-4 right-4">
                       <Button
@@ -431,27 +431,38 @@ const DesignUpload = () => {
                   </motion.div>
                 )}
 
-                {/* URL Preview - Profile/Portfolio link (no image) */}
-                {!preview && urlPreviewValid && imageUrl && (
+                {(urlStatus === "page" || urlStatus === "unreachable" || urlStatus === "invalid") && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="rounded-xl border border-border bg-secondary/30 p-4 flex items-center gap-3"
+                    className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 space-y-2"
                   >
-                    <div className="p-2 rounded-lg bg-primary/20">
-                      <ExternalLink className="w-5 h-5 text-primary" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-foreground truncate">{imageUrl}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {isBehanceOrProfileUrl(imageUrl) ? "Portfolio URL ready for analysis" : "URL accepted"}
-                      </p>
-                    </div>
-                    <Button type="button" variant="glass" size="sm" onClick={clearFile}>
-                      <X className="w-4 h-4" />
+                    <p className="text-sm font-medium text-foreground">
+                      {urlStatus === "page"
+                        ? "That's a project page, not the image itself"
+                        : urlStatus === "invalid"
+                          ? "That doesn't look like a web address"
+                          : "We couldn't load a picture from that link"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {urlStatus === "page"
+                        ? 'Open the project, right-click the design, choose "Copy image address", and paste that here — or switch to Upload File and add a screenshot.'
+                        : urlStatus === "invalid"
+                          ? "Start the link with https:// and make sure it points at an image file."
+                          : "The site may be blocking downloads. Save the design as a PNG or JPG and use Upload File instead."}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="glass"
+                      size="sm"
+                      onClick={() => { setUploadMode("file"); clearFile(); }}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Upload a file instead
                     </Button>
                   </motion.div>
                 )}
+
 
                 {imageUrl && !urlPreviewValid && (
                   <p className="text-sm text-muted-foreground">
