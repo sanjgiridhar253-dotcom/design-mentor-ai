@@ -59,33 +59,42 @@ const DesignUpload = () => {
     }
   };
 
-  const isBehanceOrProfileUrl = (url: string) => {
-    return /^https?:\/\/(www\.)?(behance\.net|dribbble\.com|figma\.com|artstation\.com)/i.test(url);
+  const isPortfolioPageUrl = (url: string) => {
+    return /^https?:\/\/(www\.)?(behance\.net|dribbble\.com|figma\.com|artstation\.com|pinterest\.|instagram\.com|drive\.google\.com|notion\.so)/i.test(url);
   };
 
   const handleUrlChange = (url: string) => {
     setImageUrl(url);
+    setPreview(null);
     setUrlPreviewValid(false);
 
-    if (!url.match(/^https?:\/\/.+/i)) return;
-
-    if (isBehanceOrProfileUrl(url)) {
-      // Accept portfolio URLs directly — no image preview needed
-      setUrlPreviewValid(true);
-      setPreview(null);
+    if (!url.match(/^https?:\/\/.+/i)) {
+      setUrlStatus(url ? "invalid" : "idle");
       return;
     }
 
-    // Try loading as direct image
+    if (isPortfolioPageUrl(url)) {
+      setUrlStatus("page");
+      return;
+    }
+
+    setUrlStatus("checking");
     const img = new Image();
+    img.crossOrigin = "anonymous";
+    const timer = window.setTimeout(() => {
+      img.src = "";
+      setUrlStatus("unreachable");
+    }, 10000);
+
     img.onload = () => {
+      window.clearTimeout(timer);
+      setUrlStatus("image");
       setUrlPreviewValid(true);
       setPreview(url);
     };
     img.onerror = () => {
-      // Still allow the URL if it looks valid
-      setUrlPreviewValid(true);
-      setPreview(null);
+      window.clearTimeout(timer);
+      setUrlStatus("unreachable");
     };
     img.src = url;
   };
@@ -93,9 +102,10 @@ const DesignUpload = () => {
   const isReadyToSubmit = () => {
     if (!title || !user) return false;
     if (uploadMode === "file") return !!file;
-    if (uploadMode === "url") return !!imageUrl && urlPreviewValid;
+    if (uploadMode === "url") return !!imageUrl && urlStatus === "image";
     return false;
   };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
