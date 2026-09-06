@@ -333,7 +333,7 @@ serve(async (req) => {
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      console.error("AI processing error:", response.status);
+      console.error("AI processing error:", response.status, await response.text().catch(() => ""));
       return new Response(
         JSON.stringify({ error: "Unable to process request" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
