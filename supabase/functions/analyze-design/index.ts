@@ -226,11 +226,61 @@ serve(async (req) => {
         );
       }
 
+      // Fetch the remote image ourselves so the model always receives real image bytes.
+      let fetched: Response;
+      try {
+        fetched = await fetch(imageUrl, {
+          headers: { "User-Agent": "Mozilla/5.0 (compatible; DesignCritiqueBot/1.0)" },
+          redirect: "follow",
+        });
+      } catch (e) {
+        console.error("Image fetch failed:", String(e));
+        return new Response(
+          JSON.stringify({ error: "We couldn't open that link. Please check it or upload the image file instead." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (!fetched.ok) {
+        console.error("Image fetch status:", fetched.status);
+        return new Response(
+          JSON.stringify({ error: "That link couldn't be loaded. Please use a direct image link or upload the file." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const contentType = (fetched.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+      if (!ALLOWED_MIME_TYPES.includes(contentType)) {
+        console.error("Non-image content type:", contentType);
+        return new Response(
+          JSON.stringify({
+            error:
+              "That link is a web page, not an image. Open the project, right-click the design image, copy its image address, and paste that — or upload a screenshot instead.",
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const bytes = new Uint8Array(await fetched.arrayBuffer());
+      if (bytes.byteLength / (1024 * 1024) > MAX_SIZE_MB) {
+        return new Response(
+          JSON.stringify({ error: `Image too large. Maximum size is ${MAX_SIZE_MB}MB` }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      let binary = "";
+      for (let i = 0; i < bytes.length; i += 8192) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+      }
+      const b64 = btoa(binary);
+
       imageContent = {
         type: "image_url",
-        image_url: { url: imageUrl },
+        image_url: { url: `data:${contentType};base64,${b64}` },
       };
     }
+
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
