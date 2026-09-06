@@ -333,12 +333,23 @@ serve(async (req) => {
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      console.error("AI processing error:", response.status, await response.text().catch(() => ""));
+      const upstreamText = await response.text().catch(() => "");
+      console.error("AI processing error:", response.status, upstreamText);
+      if (response.status === 400) {
+        return new Response(
+          JSON.stringify({
+            error:
+              "We couldn't read that image. Please use a clear PNG or JPG screenshot of your design (or a direct image link).",
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       return new Response(
         JSON.stringify({ error: "Unable to process request" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
 
     const aiResponse = await response.json();
     const content = aiResponse.choices?.[0]?.message?.content;
