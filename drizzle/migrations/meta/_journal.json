@@ -8,6 +8,13 @@
       "when": 1788599574940,
       "tag": "0000_persistent_data_layer",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788698468608,
+      "tag": "0001_tighten_rls_and_function_grants",
+      "breakpoints": true
     }
   ]
 }
