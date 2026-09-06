@@ -28,6 +28,8 @@ const DesignUpload = () => {
   const [preview, setPreview] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState("");
   const [urlPreviewValid, setUrlPreviewValid] = useState(false);
+  const [urlStatus, setUrlStatus] = useState<"idle" | "checking" | "image" | "page" | "unreachable" | "invalid">("idle");
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
