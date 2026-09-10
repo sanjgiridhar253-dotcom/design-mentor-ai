@@ -144,10 +144,18 @@ const DesignerEvaluation = () => {
 
         if (designsError) throw designsError;
 
-        const formattedDesigns = designsData?.map(d => ({
-          ...d,
-          critique: d.ai_critiques?.[0],
-        })) || [];
+        const formattedDesigns: Design[] = designsData?.map(d => {
+          const c = d.ai_critiques?.[0];
+          return {
+            ...d,
+            critique: c
+              ? {
+                  ...c,
+                  detailed_feedback: (c.detailed_feedback ?? null) as DetailedFeedback | null,
+                }
+              : undefined,
+          };
+        }) || [];
         setDesigns(formattedDesigns);
 
         // Fetch existing evaluation (for recruiters)
