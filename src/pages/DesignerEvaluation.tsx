@@ -8,6 +8,7 @@ import {
   Briefcase, 
   ExternalLink,
   FileImage,
+  Maximize2,
   Check,
   X,
   MessageSquare,
@@ -405,7 +406,11 @@ const DesignerEvaluation = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: 0.3 + index * 0.05 }}
-                  className="glass rounded-xl overflow-hidden group"
+                  className="glass rounded-xl overflow-hidden group cursor-zoom-in"
+                  onClick={() => {
+                    setZoomed(false);
+                    setPreviewDesign(design);
+                  }}
                 >
                   <div className="aspect-video relative overflow-hidden bg-secondary">
                     <img
@@ -413,6 +418,12 @@ const DesignerEvaluation = () => {
                       alt={design.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                        <Maximize2 className="w-4 h-4" />
+                        View full design
+                      </span>
+                    </div>
                   </div>
                   
                   <div className="p-4">
@@ -440,6 +451,51 @@ const DesignerEvaluation = () => {
           )}
         </motion.div>
       </div>
+
+      <Dialog open={!!previewDesign} onOpenChange={(open) => !open && setPreviewDesign(null)}>
+        <DialogContent className="max-w-5xl glass border-border">
+          <DialogHeader>
+            <DialogTitle className="font-display flex items-center justify-between gap-4 pr-8">
+              <span className="truncate">{previewDesign?.title}</span>
+              {previewDesign?.critique?.overall_score && (
+                <span className={`text-sm font-medium ${getScoreColor(previewDesign.critique.overall_score)}`}>
+                  AI score {previewDesign.critique.overall_score}/100
+                </span>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className={`rounded-lg bg-secondary/40 ${zoomed ? "overflow-auto max-h-[70vh]" : "overflow-hidden"}`}>
+            {previewDesign && (
+              <img
+                src={previewDesign.image_url}
+                alt={previewDesign.title}
+                onClick={() => setZoomed((z) => !z)}
+                className={
+                  zoomed
+                    ? "w-auto max-w-none cursor-zoom-out"
+                    : "w-full max-h-[70vh] object-contain cursor-zoom-in"
+                }
+                style={zoomed ? { width: "180%" } : undefined}
+              />
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">
+              Click the image to {zoomed ? "zoom out" : "magnify"}
+            </p>
+            {previewDesign && (
+              <Button variant="glass" size="sm" asChild className="gap-2">
+                <a href={previewDesign.image_url} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="w-4 h-4" />
+                  Open original
+                </a>
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
