@@ -12,7 +12,10 @@ import {
   Check,
   X,
   MessageSquare,
-  Calendar
+  Calendar,
+  Brain,
+  TrendingUp,
+  Lightbulb
 } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -34,6 +37,25 @@ interface Profile {
   years_experience: number | null;
 }
 
+interface CritiqueFinding {
+  type?: string;
+  title?: string;
+  description?: string;
+}
+
+interface CritiqueCategory {
+  name?: string;
+  score?: number;
+  status?: string;
+  findings?: CritiqueFinding[];
+}
+
+interface DetailedFeedback {
+  summary?: string;
+  categories?: CritiqueCategory[];
+  topPriorities?: string[];
+}
+
 interface Design {
   id: string;
   title: string;
@@ -42,8 +64,25 @@ interface Design {
   created_at: string;
   critique?: {
     overall_score: number | null;
+    typography_score?: number | null;
+    layout_score?: number | null;
+    color_score?: number | null;
+    model?: string | null;
+    strengths?: string[] | null;
+    improvements?: string[] | null;
+    detailed_feedback?: DetailedFeedback | null;
   };
 }
+
+const EVALUATION_CRITERIA = [
+  { name: "Typography", detail: "Font choices, sizing, hierarchy and readability of text." },
+  { name: "Visual Hierarchy", detail: "Whether the layout guides the eye to what matters first." },
+  { name: "Spacing & Layout", detail: "Margins, padding, whitespace, alignment and grid consistency." },
+  { name: "Color & Contrast", detail: "Palette harmony plus contrast levels for legibility." },
+  { name: "Accessibility", detail: "WCAG-style checks: contrast ratios, tap targets, inclusive design." },
+  { name: "Usability", detail: "How intuitive the interactions and flows appear." },
+  { name: "Overall Impression", detail: "Craft, polish and how professional the screen reads as a whole." },
+];
 
 interface Evaluation {
   rating: number | null;
@@ -92,7 +131,15 @@ const DesignerEvaluation = () => {
             category,
             created_at,
             ai_critiques (
-              overall_score
+              overall_score,
+              typography_score,
+              layout_score,
+              color_score,
+              model,
+              strengths,
+              improvements,
+              detailed_feedback,
+              created_at
             )
           `)
           .eq("designer_id", designerId)
@@ -100,10 +147,18 @@ const DesignerEvaluation = () => {
 
         if (designsError) throw designsError;
 
-        const formattedDesigns = designsData?.map(d => ({
-          ...d,
-          critique: d.ai_critiques?.[0],
-        })) || [];
+        const formattedDesigns: Design[] = designsData?.map(d => {
+          const c = d.ai_critiques?.[0];
+          return {
+            ...d,
+            critique: c
+              ? {
+                  ...c,
+                  detailed_feedback: (c.detailed_feedback ?? null) as DetailedFeedback | null,
+                }
+              : undefined,
+          };
+        }) || [];
         setDesigns(formattedDesigns);
 
         // Fetch existing evaluation (for recruiters)
@@ -383,6 +438,39 @@ const DesignerEvaluation = () => {
           </motion.div>
         )}
 
+        {/* How the AI scores designs */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.25 }}
+          className="glass rounded-xl p-6"
+        >
+          <h2 className="font-display text-lg font-semibold text-foreground mb-2 flex items-center gap-2">
+            <Brain className="w-5 h-5 text-primary" />
+            How the AI reviews these designs
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+            Every uploaded screen is read by a vision model (Gemini 2.5 Flash) acting as a senior
+            design mentor. It looks at the actual pixels — text, layout, colour and controls — and
+            judges the same seven criteria every time. There is no hand-written scoring formula: for
+            each criterion the model gives a 1–10 rating plus exactly one strength and one
+            improvement, each explained in a short paragraph, and the headline score out of 100
+            reflects those criteria together. Because it is a judgement rather than a measurement,
+            treat it as a consistent second opinion, not a pass/fail test.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {EVALUATION_CRITERIA.map((c) => (
+              <div key={c.name} className="rounded-lg bg-secondary/40 p-3">
+                <p className="text-sm font-medium text-foreground">{c.name}</p>
+                <p className="text-xs text-muted-foreground mt-1">{c.detail}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mt-4">
+            Open any design below to read its full feedback, criterion by criterion.
+          </p>
+        </motion.div>
+
         {/* Designer's Work */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -492,6 +580,90 @@ const DesignerEvaluation = () => {
                   Open original
                 </a>
               </Button>
+            )}
+          </div>
+
+          {/* AI feedback for this design */}
+          <div className="border-t border-border pt-4 space-y-4 max-h-[50vh] overflow-y-auto pr-1">
+            <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
+              <Brain className="w-4 h-4 text-primary" />
+              AI feedback
+            </h3>
+
+            {!previewDesign?.critique ? (
+              <p className="text-sm text-muted-foreground">
+                This design hasn't been analysed yet, so there is no AI feedback to show.
+              </p>
+            ) : (
+              <>
+                {previewDesign.critique.detailed_feedback?.summary && (
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {previewDesign.critique.detailed_feedback.summary}
+                  </p>
+                )}
+
+                {previewDesign.critique.detailed_feedback?.categories?.map((cat, i) => (
+                  <div key={i} className="rounded-lg bg-secondary/40 p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-medium text-foreground">{cat.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {cat.score != null ? `${cat.score}/10` : ""} {cat.status ? `· ${cat.status}` : ""}
+                      </span>
+                    </div>
+                    {cat.findings?.map((f, j) => (
+                      <div key={j} className="space-y-1">
+                        <p className="text-sm font-medium flex items-center gap-2 text-foreground">
+                          {f.type === "improvement" ? (
+                            <TrendingUp className="w-3.5 h-3.5 text-yellow-400" />
+                          ) : (
+                            <Check className="w-3.5 h-3.5 text-accent" />
+                          )}
+                          {f.title}
+                        </p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {f.description}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+
+                {previewDesign.critique.detailed_feedback?.topPriorities?.length ? (
+                  <div className="rounded-lg bg-primary/10 p-4">
+                    <p className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                      <Lightbulb className="w-4 h-4 text-primary" />
+                      Top priorities the AI suggested
+                    </p>
+                    <ul className="space-y-1 text-sm text-muted-foreground list-disc pl-5">
+                      {previewDesign.critique.detailed_feedback.topPriorities.map((p, i) => (
+                        <li key={i}>{p}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+
+                {!previewDesign.critique.detailed_feedback?.categories?.length && (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">Strengths</p>
+                      <ul className="space-y-1 text-sm text-muted-foreground list-disc pl-5">
+                        {previewDesign.critique.strengths?.map((s, i) => <li key={i}>{s}</li>)}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">Areas to improve</p>
+                      <ul className="space-y-1 text-sm text-muted-foreground list-disc pl-5">
+                        {previewDesign.critique.improvements?.map((s, i) => <li key={i}>{s}</li>)}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-xs text-muted-foreground">
+                  Reviewed by {previewDesign.critique.model || "Gemini 2.5 Flash"} · scores are the
+                  model's judgement on a 1–10 scale per criterion, averaged into the headline score.
+                </p>
+              </>
             )}
           </div>
         </DialogContent>
