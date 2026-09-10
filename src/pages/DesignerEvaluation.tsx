@@ -16,6 +16,7 @@ import {
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -62,6 +63,8 @@ const DesignerEvaluation = () => {
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState<string>("pending");
   const [saving, setSaving] = useState(false);
+  const [previewDesign, setPreviewDesign] = useState<Design | null>(null);
+  const [zoomed, setZoomed] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
