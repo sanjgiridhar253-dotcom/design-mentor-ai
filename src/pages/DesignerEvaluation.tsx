@@ -34,6 +34,25 @@ interface Profile {
   years_experience: number | null;
 }
 
+interface CritiqueFinding {
+  type?: string;
+  title?: string;
+  description?: string;
+}
+
+interface CritiqueCategory {
+  name?: string;
+  score?: number;
+  status?: string;
+  findings?: CritiqueFinding[];
+}
+
+interface DetailedFeedback {
+  summary?: string;
+  categories?: CritiqueCategory[];
+  topPriorities?: string[];
+}
+
 interface Design {
   id: string;
   title: string;
@@ -42,8 +61,25 @@ interface Design {
   created_at: string;
   critique?: {
     overall_score: number | null;
+    typography_score?: number | null;
+    layout_score?: number | null;
+    color_score?: number | null;
+    model?: string | null;
+    strengths?: string[] | null;
+    improvements?: string[] | null;
+    detailed_feedback?: DetailedFeedback | null;
   };
 }
+
+const EVALUATION_CRITERIA = [
+  { name: "Typography", detail: "Font choices, sizing, hierarchy and readability of text." },
+  { name: "Visual Hierarchy", detail: "Whether the layout guides the eye to what matters first." },
+  { name: "Spacing & Layout", detail: "Margins, padding, whitespace, alignment and grid consistency." },
+  { name: "Color & Contrast", detail: "Palette harmony plus contrast levels for legibility." },
+  { name: "Accessibility", detail: "WCAG-style checks: contrast ratios, tap targets, inclusive design." },
+  { name: "Usability", detail: "How intuitive the interactions and flows appear." },
+  { name: "Overall Impression", detail: "Craft, polish and how professional the screen reads as a whole." },
+];
 
 interface Evaluation {
   rating: number | null;
