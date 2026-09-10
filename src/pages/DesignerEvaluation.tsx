@@ -128,7 +128,15 @@ const DesignerEvaluation = () => {
             category,
             created_at,
             ai_critiques (
-              overall_score
+              overall_score,
+              typography_score,
+              layout_score,
+              color_score,
+              model,
+              strengths,
+              improvements,
+              detailed_feedback,
+              created_at
             )
           `)
           .eq("designer_id", designerId)
