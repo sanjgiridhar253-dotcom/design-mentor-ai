@@ -12,7 +12,10 @@ import {
   Check,
   X,
   MessageSquare,
-  Calendar
+  Calendar,
+  Brain,
+  TrendingUp,
+  Lightbulb
 } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
