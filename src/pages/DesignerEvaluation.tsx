@@ -438,6 +438,39 @@ const DesignerEvaluation = () => {
           </motion.div>
         )}
 
+        {/* How the AI scores designs */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.25 }}
+          className="glass rounded-xl p-6"
+        >
+          <h2 className="font-display text-lg font-semibold text-foreground mb-2 flex items-center gap-2">
+            <Brain className="w-5 h-5 text-primary" />
+            How the AI reviews these designs
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+            Every uploaded screen is read by a vision model (Gemini 2.5 Flash) acting as a senior
+            design mentor. It looks at the actual pixels — text, layout, colour and controls — and
+            judges the same seven criteria every time. There is no hand-written scoring formula: for
+            each criterion the model gives a 1–10 rating plus exactly one strength and one
+            improvement, each explained in a short paragraph, and the headline score out of 100
+            reflects those criteria together. Because it is a judgement rather than a measurement,
+            treat it as a consistent second opinion, not a pass/fail test.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {EVALUATION_CRITERIA.map((c) => (
+              <div key={c.name} className="rounded-lg bg-secondary/40 p-3">
+                <p className="text-sm font-medium text-foreground">{c.name}</p>
+                <p className="text-xs text-muted-foreground mt-1">{c.detail}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mt-4">
+            Open any design below to read its full feedback, criterion by criterion.
+          </p>
+        </motion.div>
+
         {/* Designer's Work */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
