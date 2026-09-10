@@ -546,6 +546,90 @@ const DesignerEvaluation = () => {
               </Button>
             )}
           </div>
+
+          {/* AI feedback for this design */}
+          <div className="border-t border-border pt-4 space-y-4 max-h-[50vh] overflow-y-auto pr-1">
+            <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
+              <Brain className="w-4 h-4 text-primary" />
+              AI feedback
+            </h3>
+
+            {!previewDesign?.critique ? (
+              <p className="text-sm text-muted-foreground">
+                This design hasn't been analysed yet, so there is no AI feedback to show.
+              </p>
+            ) : (
+              <>
+                {previewDesign.critique.detailed_feedback?.summary && (
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {previewDesign.critique.detailed_feedback.summary}
+                  </p>
+                )}
+
+                {previewDesign.critique.detailed_feedback?.categories?.map((cat, i) => (
+                  <div key={i} className="rounded-lg bg-secondary/40 p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-medium text-foreground">{cat.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {cat.score != null ? `${cat.score}/10` : ""} {cat.status ? `· ${cat.status}` : ""}
+                      </span>
+                    </div>
+                    {cat.findings?.map((f, j) => (
+                      <div key={j} className="space-y-1">
+                        <p className="text-sm font-medium flex items-center gap-2 text-foreground">
+                          {f.type === "improvement" ? (
+                            <TrendingUp className="w-3.5 h-3.5 text-yellow-400" />
+                          ) : (
+                            <Check className="w-3.5 h-3.5 text-accent" />
+                          )}
+                          {f.title}
+                        </p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {f.description}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+
+                {previewDesign.critique.detailed_feedback?.topPriorities?.length ? (
+                  <div className="rounded-lg bg-primary/10 p-4">
+                    <p className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                      <Lightbulb className="w-4 h-4 text-primary" />
+                      Top priorities the AI suggested
+                    </p>
+                    <ul className="space-y-1 text-sm text-muted-foreground list-disc pl-5">
+                      {previewDesign.critique.detailed_feedback.topPriorities.map((p, i) => (
+                        <li key={i}>{p}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+
+                {!previewDesign.critique.detailed_feedback?.categories?.length && (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">Strengths</p>
+                      <ul className="space-y-1 text-sm text-muted-foreground list-disc pl-5">
+                        {previewDesign.critique.strengths?.map((s, i) => <li key={i}>{s}</li>)}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">Areas to improve</p>
+                      <ul className="space-y-1 text-sm text-muted-foreground list-disc pl-5">
+                        {previewDesign.critique.improvements?.map((s, i) => <li key={i}>{s}</li>)}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-xs text-muted-foreground">
+                  Reviewed by {previewDesign.critique.model || "Gemini 2.5 Flash"} · scores are the
+                  model's judgement on a 1–10 scale per criterion, averaged into the headline score.
+                </p>
+              </>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </DashboardLayout>
