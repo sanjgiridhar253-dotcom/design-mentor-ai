@@ -111,6 +111,108 @@ export type Database = {
           },
         ]
       }
+      challenge_submissions: {
+        Row: {
+          ai_evaluation: Json | null
+          ai_overall_score: number | null
+          challenge_id: string
+          created_at: string
+          design_id: string
+          designer_id: string
+          id: string
+          recruiter_feedback: Json | null
+          recruiter_recommendation: string | null
+          reviewed_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          ai_evaluation?: Json | null
+          ai_overall_score?: number | null
+          challenge_id: string
+          created_at?: string
+          design_id: string
+          designer_id: string
+          id?: string
+          recruiter_feedback?: Json | null
+          recruiter_recommendation?: string | null
+          reviewed_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          ai_evaluation?: Json | null
+          ai_overall_score?: number | null
+          challenge_id?: string
+          created_at?: string
+          design_id?: string
+          designer_id?: string
+          id?: string
+          recruiter_feedback?: Json | null
+          recruiter_recommendation?: string | null
+          reviewed_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_submissions_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_submissions_design_id_fkey"
+            columns: ["design_id"]
+            isOneToOne: false
+            referencedRelation: "designs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenges: {
+        Row: {
+          constraints: string | null
+          created_at: string
+          evaluation_criteria: Json
+          id: string
+          primary_goal: string | null
+          problem_statement: string | null
+          recruiter_id: string
+          status: string
+          target_user: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          constraints?: string | null
+          created_at?: string
+          evaluation_criteria?: Json
+          id?: string
+          primary_goal?: string | null
+          problem_statement?: string | null
+          recruiter_id: string
+          status?: string
+          target_user?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          constraints?: string | null
+          created_at?: string
+          evaluation_criteria?: Json
+          id?: string
+          primary_goal?: string | null
+          problem_statement?: string | null
+          recruiter_id?: string
+          status?: string
+          target_user?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       design_comparisons: {
         Row: {
           created_at: string
