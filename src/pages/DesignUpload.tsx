@@ -102,7 +102,7 @@ const DesignUpload = () => {
   };
 
   const isReadyToSubmit = () => {
-    if (!title || !user) return false;
+    if (!user) return false;
     if (uploadMode === "file") return !!file;
     if (uploadMode === "url") return !!imageUrl && urlStatus === "image";
     return false;
@@ -167,7 +167,7 @@ const DesignUpload = () => {
         .from("designs")
         .insert({
           designer_id: user.id,
-          title,
+          title: title.trim() || "Untitled design",
           description: fullDescription,
           category,
           image_url: finalImageUrl,
@@ -475,13 +475,12 @@ const DesignUpload = () => {
             {/* Form Fields */}
             <div className="glass rounded-xl p-6 space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="title" className="text-foreground">Design Title *</Label>
+                <Label htmlFor="title" className="text-foreground">Design Title (optional)</Label>
                 <Input
                   id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g., E-commerce Dashboard"
-                  required
                   className="bg-secondary/50 border-border"
                 />
               </div>
