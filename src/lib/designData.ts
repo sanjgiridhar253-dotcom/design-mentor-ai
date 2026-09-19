@@ -32,6 +32,38 @@ export const listAnalysisSessions = async (userId: string) => {
   return data ?? [];
 };
 
+/* ---------- Private storage: signed image URLs ---------- */
+
+export type DesignImageRef = { image_url: string | null; storage_path: string | null };
+
+const SIGNED_URL_TTL_SECONDS = 60 * 60; // 1 hour
+
+/** Resolve a displayable URL for a single design (signs private storage files). */
+export const resolveDesignImageUrl = async (design: DesignImageRef): Promise<string> => {
+  if (design.storage_path) {
+    const { data } = await supabase.storage
+      .from("designs")
+      .createSignedUrl(design.storage_path, SIGNED_URL_TTL_SECONDS);
+    if (data?.signedUrl) return data.signedUrl;
+  }
+  return design.image_url ?? "";
+};
+
+/** Batch version: returns the same designs with image_url replaced by a signed URL where applicable. */
+export const resolveDesignImageUrls = async <T extends DesignImageRef>(designs: T[]): Promise<T[]> => {
+  const paths = designs.map((d) => d.storage_path).filter((p): p is string => !!p);
+  if (paths.length === 0) return designs;
+  const { data } = await supabase.storage
+    .from("designs")
+    .createSignedUrls(paths, SIGNED_URL_TTL_SECONDS);
+  const byPath = new Map((data ?? []).map((s) => [s.path, s.signedUrl]));
+  return designs.map((d) =>
+    d.storage_path && byPath.get(d.storage_path)
+      ? { ...d, image_url: byPath.get(d.storage_path)! }
+      : d
+  );
+};
+
 /* ---------- Per-design recruiter evaluations ---------- */
 
 export const upsertDesignEvaluation = async (params: {
