@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveDesignImageUrls } from "@/lib/designData";
 import { toast } from "sonner";
 
 interface Profile {
@@ -60,6 +61,7 @@ interface Design {
   id: string;
   title: string;
   image_url: string;
+  storage_path: string | null;
   category: string | null;
   created_at: string;
   critique?: {
@@ -128,6 +130,7 @@ const DesignerEvaluation = () => {
             id,
             title,
             image_url,
+            storage_path,
             category,
             created_at,
             ai_critiques (
@@ -159,7 +162,7 @@ const DesignerEvaluation = () => {
               : undefined,
           };
         }) || [];
-        setDesigns(formattedDesigns);
+        setDesigns(await resolveDesignImageUrls(formattedDesigns));
 
         // Fetch existing evaluation (for recruiters)
         if (user && role === "recruiter") {
