@@ -6,6 +6,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveDesignImageUrls } from "@/lib/designData";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -23,6 +24,7 @@ interface Design {
   title: string;
   description: string | null;
   image_url: string;
+  storage_path: string | null;
   category: string | null;
   created_at: string;
   critique?: {
@@ -76,6 +78,7 @@ const MyDesigns = () => {
             title,
             description,
             image_url,
+            storage_path,
             category,
             created_at,
             ai_critiques (
@@ -92,7 +95,7 @@ const MyDesigns = () => {
           critique: d.ai_critiques?.[0],
         })) || [];
 
-        setDesigns(formattedDesigns);
+        setDesigns(await resolveDesignImageUrls(formattedDesigns));
       } catch (error) {
         console.error("Error fetching designs:", error);
       } finally {

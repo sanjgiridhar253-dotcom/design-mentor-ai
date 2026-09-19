@@ -17,6 +17,7 @@ import {
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveDesignImageUrl } from "@/lib/designData";
 import { toast } from "sonner";
 import { AnalysisHistory } from "@/components/AnalysisHistory";
 
@@ -39,6 +40,7 @@ interface Design {
   title: string;
   description: string | null;
   image_url: string;
+  storage_path: string | null;
   category: string | null;
 }
 
@@ -93,7 +95,12 @@ const CritiqueResults = () => {
           .maybeSingle();
 
         if (designError) throw designError;
-        setDesign(designData);
+        if (designData) {
+          const signedUrl = await resolveDesignImageUrl(designData);
+          setDesign({ ...designData, image_url: signedUrl });
+        } else {
+          setDesign(null);
+        }
 
         const { data: critiquesData, error: critiqueError } = await supabase
           .from("ai_critiques")
@@ -120,8 +127,10 @@ const CritiqueResults = () => {
     if (!design || !designId) return;
     setReanalyzing(true);
     try {
+      // Refresh the signed URL right before analysis (stored/signed URLs can expire)
+      const freshImageUrl = await resolveDesignImageUrl(design);
       const { data, error: fnError } = await supabase.functions.invoke("analyze-design", {
-        body: { imageUrl: design.image_url },
+        body: { imageUrl: freshImageUrl },
       });
 
       if (fnError) throw new Error(fnError.message);
