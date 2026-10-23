@@ -29,6 +29,13 @@
       "when": 1789491608926,
       "tag": "0003_create_challenges_and_submissions",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792742531069,
+      "tag": "0004_add_designs_storage_paths",
+      "breakpoints": true
     }
   ]
 }

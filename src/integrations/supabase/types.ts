@@ -299,6 +299,7 @@ export type Database = {
           source_type: string | null
           source_url: string | null
           storage_path: string | null
+          storage_paths: Json | null
           tags: string[] | null
           title: string
           updated_at: string
@@ -314,6 +315,7 @@ export type Database = {
           source_type?: string | null
           source_url?: string | null
           storage_path?: string | null
+          storage_paths?: Json | null
           tags?: string[] | null
           title: string
           updated_at?: string
@@ -329,6 +331,7 @@ export type Database = {
           source_type?: string | null
           source_url?: string | null
           storage_path?: string | null
+          storage_paths?: Json | null
           tags?: string[] | null
           title?: string
           updated_at?: string
